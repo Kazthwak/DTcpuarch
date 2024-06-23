@@ -1,0 +1,95 @@
+65536 bytes of rom
+65536 bytes of ram
+
+16 bit regs
+regs
+ss	- stack pointer (16 bit)
+isp	- instruction pointer (16 bit)
+#rs	- ram offset(8 bit) (added to ram adresses after being <<8)
+f	- flags (for conditionals)
+	0:	less than
+	1:	greater than
+	2:	equal to
+	3-7:	reserved
+
+x	- general purpose register
+y	- general purpose register
+a	- general purpose register
+b	- general purpose register
+z	- 16 bit accumulator
+
+all instructions encoded as destination<-source (where applicable)
+
+instructions:
+move:
+	00: reg->reg	regbyte	regbyte
+	01: imm->x	16-bit-immvalue
+        02: imm->y	16-bit-immvalue
+        03: imm->a	16-bit-immvalue
+        04: imm->b	16-bit-immvalue
+	05: imm->acc	16-bit-immvalue
+	06: ram->x	16-bit-address
+	07: ram->y	16-bit-address
+	08: ram->a	16-bit-address
+	09: ram->b	16-bit-address
+	0A: ram->acc	16-bit-address
+	0B: [reg]->reg	regbyte	regbyte
+	0C: reg->[reg]	regbyte regbyte
+	0D: x->ram	16-bit-address
+	0E: y->ram	16-bit-address
+	0F: a->ram	16-bit-address
+	10: b->ram	16-bit-address
+	11: acc->ram	16-bit-adress
+
+arithmatic:
+	12: general	regbyte mode:
+		00: add
+		01: sub
+		02: mul
+		03: integer division
+		04: remainder
+		05: bit shift right
+		06: bit shift left
+		07: and
+		08: or
+		09: xor
+		0A: not (ignores regbyte)
+
+conditional:
+	13: cmpreg	regbyte regbyte
+	14: cmpimm	regbyte 8-bit-imm
+	15: test	mode 00: if condition fails, increments the isp by 3 (skipping the next instruction)
+		00: less than
+		01: greater than
+		02: less than or equal to
+		03: greater than or equal to
+		04: equal to
+		05: not equal
+
+jump:
+	16: jmprimm	16-bit-imm (1s compliment)
+	17: jmprreg	regbyte imm (0=for, otherwise back)
+	18: jmpimm	16-bit-imm
+	19: jmpreg	regbyte 00
+
+stack:
+	1A: pushreg	regbyte 00
+	1B: pushimm	16-bit-imm
+	1C: pop		regbyte 00
+	1D: call	16-bit-imm (address to call)
+	1E: ret		0000
+	
+
+Interrupts:
+	Ever 1/framerate seconds, a vblacnk interrupt is fired
+	If bytes ff02 and ff03 are 0, interrupt is ignored
+	Otherwise, the current adress is pushed to the stack, and control is jumped to the value stored in bytes ff02 and ff03
+
+Memory Map:
+	Little Endian
+	Values ff00-ffff are memory mapped hardware
+	Reads and writes are undefined behaviour, except from:
+	byte ff00-ff001 contains the 8 buttons on the controller
+	bytes ff02-ff03 interrupts
+	byte ff04-ffTBC contains the screen
+	Imm 0xaa, 0xff represents 0xffaa (little endian)

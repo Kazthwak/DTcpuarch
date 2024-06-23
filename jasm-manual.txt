@@ -1,0 +1,62 @@
+The computer has 0xffff bytes of rom that code is loaded from, and 0xffff bytes of ram, the last 0x0100 bytes of which are for memory mapped hardware.
+
+There are 8 registers:
+
+Special registers:
+SS, is the pointer to the stack. The stack grows downwards, and only holds 16 bit values.
+ISP, points to the instruction to be executed.
+F, holds the state of the flags, only indirectly updated by the cmp instructions.
+
+x, Y, A and B are general purpose registers.
+ACC is the accumulator, all maths operations are performed on it.
+
+(All immediate 16 bit values are stored LSB, MSB)
+
+Move:
+	00 (RegMov): Moves the value stored in reg[arg1] to reg[arg0]
+	01-05 (MovImm): Load the immediate value into a non-special register. (01 is X, 05 is Acc)
+	06-0A (MovRam): Load the value stored in ram[Immediate] into a non-special register.
+	0B (Mov[Reg]): Move the value from ram[reg[arg1]] to reg[arg0]
+	0C ([Mov]Reg): Move the value from reg[arg1] to ram[reg[arg0]]
+	0D-11 (RamMov): Move the value from a non special register to ram[Imm]
+
+Maths: (all operations on the accumulator)
+12: Takes a Mode byte (after reg byte)
+Mode:
+	00 (Add): Add the value stored in the register to the accumulator
+	01 (Sub): Subtract the value stored in the register from the accumulator
+	02 (Mul): Multiply the value in the accumulator with the value in the register
+	03 (Div): Divide the accumulator by the register. Round towards 0
+	04 (%): Calculate the remainder of dividing the accumulator by the register
+	05 (RBS): Bit shift the accumulator right by the value in the register
+	06 (LBS): Bit shift the accumulator left by the value in the register
+	07 (And): Bitwise AND the accumulator with the register
+	08 (Or) : Bitwise OR  the accumulator with the register
+	09 (Xor): Bitwise XOR the accumulator with the register
+	0A (Not): Bitwise NOT the accumulator
+
+Conditionals:
+	13: Compare the first register with the second register
+	14: Compare the register with an 8bit immediate
+
+Compares:
+	Set bit 0 of flags if a < b
+	Set bit 1 of flags if a > b
+	Set bit 2 of flags of a == b
+
+	15 (Test): Uses mode to skip an instruction:
+		00: <
+		01: >
+		02: <=
+		03: >=
+		04: ==
+		05: !=
+	if the test fails, ISP is incremented by 3, skipping the next instruction
+
+Jump:
+	16 (relative jumb by immediate): Jump relative to ISP (without incrementing isp by 3 to the next instruction). The first bit is set for negative (so jumps can be at maximum 32767 bytes)
+	17 (realtive jump by register): Jump relative to ISP (before incrementing ips by 3 to the next instruction). 0 in the immediate byte is forwards, otherwise the jump is backwards
+	18 (Absolute jump to immediate): Set ISP to the immediate value
+	19 (Absolute jump to register): Set ISP to the value stored in the register
+	1A (Push register):
+	

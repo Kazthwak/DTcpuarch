@@ -236,7 +236,7 @@ printf("\n");
 for(uint8_t i = 0; i <= ACC; i++){
 	printf("%u ", regs[i]);
 }
-getchar();12
+getchar();
 }
 
 return(0);

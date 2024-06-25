@@ -3,42 +3,82 @@ all_regs = [0,1,2,3,4,5,6,7]
 all_mem = [-1,-2,-3,-4,-5,-6,-7]
 
 valid_instructions = [
-[["mov", [all_regs,all_regs]], 0x00], #mov reg-reg
-[["mov", [[3], [0xff]]], 0x01], #movx
-[["mov", [[4], [0xff]]], 0x02], #movy
-[["mov", [[5], [0xff]]], 0x03], #mova
-[["mov", [[6], [0xff]]], 0x04], #movb
-[["mov", [[7], [0xff]]], 0x05], #movacc
-[["mov", [[3], [-0xff]]], 0x06], #mov ram->x
-[["mov", [[4], [-0xff]]], 0x07], #mov ram->y
-[["mov", [[5], [-0xff]]], 0x08], #mov ram->a
-[["mov", [[6], [-0xff]]], 0x09], #mov ram->b
-[["mov", [[7], [-0xff]]], 0x0A], #mov ram->acc
-[["mov", [all_regs, all_mem]], 0x0D], #mov reg->[reg]
-[["mov", [all_mem, all_regs]], 0x0C], #mov [reg]->reg
-[["mov", [[-0xff], [3]]], 0x0D], #mov x->ram
-[["mov", [[-0xff], [4]]], 0x0E], #mov y->ram
-[["mov", [[-0xff], [5]]], 0x0F], #mov a->ram
-[["mov", [[-0xff], [6]]], 0x10], #mov b->ram
-[["mov", [[-0xff], [7]]], 0x11], #mov acc->ram
+[["mov", [all_regs,all_regs]], [0x00, [True, True]]], #mov reg-reg
+[["mov", [[3], [0xff]]], [0x01, [False, True]]], #movx
+[["mov", [[4], [0xff]]], [0x02, [False, True]]], #movy
+[["mov", [[5], [0xff]]], [0x03, [False, True]]], #mova
+[["mov", [[6], [0xff]]], [0x04, [False, True]]], #movb
+[["mov", [[7], [0xff]]], [0x05, [False, True]]], #movacc
+[["mov", [[3], [-0xff]]], [0x06, [False, True]]], #mov ram->x
+[["mov", [[4], [-0xff]]], [0x07, [False, True]]], #mov ram->y
+[["mov", [[5], [-0xff]]], [0x08, [False, True]]], #mov ram->a
+[["mov", [[6], [-0xff]]], [0x09, [False, True]]], #mov ram->b
+[["mov", [[7], [-0xff]]], [0x0A, [False, True]]], #mov ram->acc
+[["mov", [all_regs, all_mem]], [0x0D, [True, True]]], #mov reg->[reg]
+[["mov", [all_mem, all_regs]], [0x0C, [True, True]]], #mov [reg]->reg
+[["mov", [[-0xff], [3]]], [0x0D, [True, False]]], #mov x->ram
+[["mov", [[-0xff], [4]]], [0x0E, [True, False]]], #mov y->ram
+[["mov", [[-0xff], [5]]], [0x0F, [True, False]]], #mov a->ram
+[["mov", [[-0xff], [6]]], [0x10, [True, False]]], #mov b->ram
+[["mov", [[-0xff], [7]]], [0x11, [True, False]]], #mov acc->ram
 
 
-[["maths", [all_regs, [0xff]]], 0x12], #do maths
+[["maths", [all_regs, [0xff]]], [0x12, [True, True]]], #do maths
 
-[["cmp", [all_regs, all_regs]], 0x13],
-[["cmp", [all_regs, [0xff]]], 0x14],
-[["test", [[0xff]]], 0x15],
-[["jmpr", [[0xff]]], 0x16],
-[["jmp", [[0xff]]], 0x17],
+[["cmp", [all_regs, all_regs]], [0x13, [True, True]]],
+[["cmp", [all_regs, [0xff]]], [0x14, [True, True]]],
+[["test", [[0xff]]], [0x15, [True]]],
+[["jmpr", [[0xff]]], [0x16, [True]]],
+[["jmp", [[0xff]]], [0x17, [True]]],
 #relative register jump is useless
-[["jmp", [all_regs]], 0x19],
+[["jmp", [all_regs]], [0x19, [True]]],
 
-[["push", [all_regs]], 0x1A],
-[["push", [[0xff]]], 0x1B],
-[["pop", [all_regs]], 0x1C],
-[["call", [[0xff]]], 0x1D],
-[["ret", []], 0x1E]
+[["push", [all_regs]], [0x1A, [True]]],
+[["push", [[0xff]]], [0x1B, [True]]],
+[["pop", [all_regs]], [0x1C, [True]]],
+[["call", [[0xff]]], [0x1D, [True]]],
+[["ret", []], [0x1E, []]],
+
+[["num", [[0xff]]], [0xFF, [True]]]
 ]
+
+#0 is 8bitbal
+#1 is 16bitval
+#2 is 8bit 0 padding
+
+instruction_param = {
+0x00 : [0,0],
+0x01 : [1],
+0x03 : [1],
+0x04 : [1],
+0x05 : [1],
+0x06 : [1],
+0x07 : [1],
+0x08 : [1],
+0x09 : [1],
+0x0A : [1],
+0x0B : [0,0],
+0x0C : [0,0],
+0x0D : [1],
+0x0E : [1],
+0x0F : [1],
+0x10 : [1],
+0x11 : [1],
+0x12 : [0,0],
+0x13 : [0,0],
+0x14 : [0,0],
+0x15 : [0,2],
+0x16 : [1],
+0x17 : [0,0],
+0x18 : [1],
+0x19 : [0,2],
+0x1A : [0,2],
+0x1B : [1],
+0x1C : [0,2],
+0x1D : [1],
+0x1E : [2,2],
+0xff : [1]
+}
 
 regs = {
 "isp": 0x00, # stack pointer
@@ -53,6 +93,30 @@ regs = {
 
 maths = [["add",0x00],["sub",0x01],["mul",0x02],["div",0x03],["rem", 0x04],["bsr",0x05],["bsl",0x06],
 ["and",0x07],["or", 0x08],["xor",0x09],["not",0x0A]]
+
+def isnum(num):
+	try:
+		a = int(str(num), 10)
+		return(True)
+	except:
+		pass
+	try:
+		a = int(str(num), 0x10)
+		return(True)
+	except:
+		pass
+	return(False)
+
+def getnum(num):
+	try:
+		return(int(num,  10))
+	except:
+		pass
+	try:
+		return(int(num,0x10))
+	except:
+		pass
+		return(0)
 
 def get_inst(instruction_data):
 	#most complicated function I have ever made
@@ -72,29 +136,16 @@ def get_inst(instruction_data):
 			print(f"Unexpected square bracket in instruction {instruction_data}")
 			exit()
 		i = i.strip("[]")
-		is_imm = False
-		try:
-			a = int(i, 10)
-			is_imm = True
-		except:
-			pass
-		try:
-			a = int(i, 0x10)
-			is_imm = True
-		except:
-			pass
+		is_imm = isnum(i)
 		#todo - Make this 1000 times more complicated
 		argtype = 0
 		if(is_imm):
 			argtype = 0xff
 		else:
 			argtype = regs[i]
-
 		if(isaddr):
 			argtype *= -1
 		operands.append(argtype)
-	print(instruction_data)
-	print(operands)
 	
 	#operands now contains an array of the different operand types provided
 	inst = instruction_data[0]
@@ -125,9 +176,17 @@ def get_inst(instruction_data):
 		num_args = len(i[0][1])
 		arg_types = i[0][1]
 		failiure = False
+		if(inst != i[0][0]):
+			failiure = True
 		for j in range(num_args):
-			if(operands[j] in arg_types[j])
-		pass
+			if(operands[j] in arg_types[j]):
+				pass
+			else:
+				failiure = True
+		if(failiure == False):
+			return(i[1])
+	print(f"Error, Invalid instruction {instruction_data}")
+	exit()
 
 
 #done with the hardest part now (he says, hopefully)
@@ -173,6 +232,7 @@ for i in ins:
 	if(i[1][-1:] == ":"):
 		labeltable.append([i[1][:-1], i[0]])
 
+
 #replace labels with labeladresses
 for i in range(len(ins)):
 	for j in labeltable:
@@ -197,5 +257,37 @@ for i in range(len(ins)):
 for i in range(len(ins)):
 	ins[i][1][0] = get_inst(ins[i][1])
 
-print(ins)
-del(labeltable)
+#structure:
+#array of arrays containing:
+#address and then an array of instruction id and paramaters
+
+processed_instruction = []
+
+for i in ins:
+	tmp = [i[1][0][0]]
+	for j in range(len(i[1][0][1])):
+		if(i[1][0][1][j]):
+			tmp.append(i[1][1+j])
+	processed_instruction.append(tmp)
+
+
+# print(processed_instruction)
+#todo GETINT
+for i in processed_instruction:
+	threebyteinst = [i[0]]
+	for j in range(1,len(i)):
+		if(instruction_param[i[0]][j-1] == 0):
+			if(isnum(i[j]) or isnum(str(i[j]).strip("[]"))):
+				threebyteinst.append(int(i[j])%0xff)
+			else:
+				threebyteinst.append(regs[i[j]])
+		elif(instruction_param[i[0]][j-1] == 1):
+			if(isnum(i[j]) or isnum(str(i[j]).strip("[]"))):
+				threebyteinst.append(int(i[j])%0xff)
+				threebyteinst.append((int(i[j])>>8)%0xff)
+			else:
+				print("ERROR, Number expected")
+				exit()
+		elif(instruction_param[i[0]][j-1] == 2):
+			threebyteinst.append(0x00)
+	print(threebyteinst)

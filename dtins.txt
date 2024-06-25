@@ -4,7 +4,7 @@
 16 bit regs
 regs
 ss	- stack pointer (16 bit)
-isp	- instruction pointer (16 bit)
+ip	- instruction pointer (16 bit)
 #rs	- ram offset(8 bit) (added to ram adresses after being <<8)
 f	- flags (for conditionals)
 	0:	less than

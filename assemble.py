@@ -40,6 +40,17 @@ valid_instructions = [
 [["ret", []], 0x1E]
 ]
 
+regs = {
+"isp": 0x00, # stack pointer
+"ip" : 0x01, # instruction pointer
+"fl" : 0x02,
+"x"  : 0x03,
+"y"  : 0x04,
+"a"  : 0x05,
+"b"  : 0x06,
+"acc": 0x07
+}
+
 maths = [["add",0x00],["sub",0x01],["mul",0x02],["div",0x03],["rem", 0x04],["bsr",0x05],["bsl",0x06],
 ["and",0x07],["or", 0x08],["xor",0x09],["not",0x0A]]
 
@@ -72,7 +83,16 @@ def get_inst(instruction_data):
 			is_imm = True
 		except:
 			pass
-		operands.append(is_imm + (2*isaddr))
+		#todo - Make this 1000 times more complicated
+		argtype = 0
+		if(is_imm):
+			argtype = 0xff
+		else:
+			argtype = regs[i]
+
+		if(isaddr):
+			argtype *= -1
+		operands.append(argtype)
 	print(instruction_data)
 	print(operands)
 	
@@ -106,7 +126,7 @@ def get_inst(instruction_data):
 		arg_types = i[0][1]
 		failiure = False
 		for j in range(num_args):
-			if(operands[j])
+			if(operands[j] in arg_types[j])
 		pass
 
 

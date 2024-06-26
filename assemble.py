@@ -29,8 +29,8 @@ valid_instructions = [
 [["cmp", [all_regs, [0xff]]], [0x14, [True, True]]],
 [["test", [[0xff]]], [0x15, [True]]],
 [["jmpr", [[0xff]]], [0x16, [True]]],
-[["jmp", [[0xff]]], [0x17, [True]]],
 #relative register jump is useless
+[["jmp", [[0xff]]], [0x18, [True]]],
 [["jmp", [all_regs]], [0x19, [True]]],
 
 [["push", [all_regs]], [0x1A, [True]]],
@@ -102,12 +102,13 @@ def isnum(num):
 		pass
 	try:
 		a = int(str(num), 0x10)
-		return(True)
+		return(num[:2] == "0x")
 	except:
 		pass
 	return(False)
 
 def getnum(num):
+	num = str(num).strip("[]")
 	try:
 		return(int(num,  10))
 	except:
@@ -117,6 +118,7 @@ def getnum(num):
 	except:
 		pass
 		return(0)
+
 
 def get_inst(instruction_data):
 	#most complicated function I have ever made
@@ -273,21 +275,44 @@ for i in ins:
 
 # print(processed_instruction)
 #todo GETINT
+
+instbytes = []
+
 for i in processed_instruction:
 	threebyteinst = [i[0]]
 	for j in range(1,len(i)):
 		if(instruction_param[i[0]][j-1] == 0):
 			if(isnum(i[j]) or isnum(str(i[j]).strip("[]"))):
-				threebyteinst.append(int(i[j])%0xff)
+				threebyteinst.append(getnum(i[j])%0x100)
 			else:
 				threebyteinst.append(regs[i[j]])
 		elif(instruction_param[i[0]][j-1] == 1):
 			if(isnum(i[j]) or isnum(str(i[j]).strip("[]"))):
-				threebyteinst.append(int(i[j])%0xff)
-				threebyteinst.append((int(i[j])>>8)%0xff)
+				threebyteinst.append(getnum(i[j])%0x100)
+				threebyteinst.append((getnum(i[j])>>8)%0x100)
 			else:
 				print("ERROR, Number expected")
 				exit()
 		elif(instruction_param[i[0]][j-1] == 2):
 			threebyteinst.append(0x00)
-	print(threebyteinst)
+	instbytes.append(threebyteinst)
+
+#---------------------------------------
+#PADDING ON 0x15 NOT OPERATING CORRECTLY
+#---------------------------------------
+
+bytesasnum = []
+for i in instbytes:
+	isval = False
+	if(i[0] == 0xff):
+		isval = True
+	for j in range(len(i)):
+		if(j !=0 or isval == False):
+			bytesasnum.append(i[j])
+
+print(bytesasnum)
+bytesasbytes = bytes(bytesasnum)
+print(bytesasbytes)
+output = open("pytest.bin", "wb")
+output.write(bytesasbytes)
+output.close()

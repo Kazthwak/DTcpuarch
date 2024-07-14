@@ -1,7 +1,57 @@
+mov x, 0x0A
+mov acc, 0x05
+maths x, add
+mov acc, a
+mov y, 0xff06
+
+lop:
+mov a, acc
 mov x, 1
-begin:
-maths x add
-cmp acc 0x10
-test 01
-jmp begin
+maths x, and
+mov x, 0xffff
+maths x, mul
+mov x, acc ;x holds the colour
+mov acc, 0
+mov [y], acc
+mov acc, y
+maths y inc
+mov [acc], x
+maths y, inc
+maths y, inc
+mov acc, y ;pointer updated
+mov acc, a
+mov x, 1
+maths x, bsr
+mov a, acc
+jmp lop
+
+label:
+jmp label
+
+
+
+mov x, 1
+mov y, 1
+mov a, 0
+mov acc, 0
+;function breaks at 25th fibonacci number as it surpasses 2^16
+loop:
+;loop for basic fibonacci calculator
+maths x, add
+mov x, acc
+;done the fib, next bit is to store in ram
+mov [a], acc
+mov acc, a
+maths acc, inc ;pointer arithmatic
+maths acc, inc ;pointer arithmatic
+mov a, acc
 mov acc, x
+maths y, add ;repeat the process with y
+mov y, acc
+mov [a], acc ;do the ram thing
+mov acc, a
+maths acc, inc ;pointer arithmatic
+maths acc, inc ;pointer arithmatic
+mov a, acc
+mov acc, y
+jmp loop ;repeat

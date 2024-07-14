@@ -3,7 +3,7 @@
 default: run
 
 run: emu
-	@./emu test
+	@./emu pytest.bin
 
-a.out: emu.c
-	@gcc emu.c -o emu
+emu: emu.c
+	@gcc emu.c -lSDL2main -lSDL2 -o emu

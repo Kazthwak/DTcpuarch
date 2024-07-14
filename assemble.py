@@ -45,39 +45,40 @@ valid_instructions = [
 #0 is 8bitbal
 #1 is 16bitval
 #2 is 8bit 0 padding
-
+#4 is nothing
 instruction_param = {
 0x00 : [0,0],
-0x01 : [1],
-0x03 : [1],
-0x04 : [1],
-0x05 : [1],
-0x06 : [1],
-0x07 : [1],
-0x08 : [1],
-0x09 : [1],
-0x0A : [1],
+0x01 : [1,4],
+0x02 : [1,4],
+0x03 : [1,4],
+0x04 : [1,4],
+0x05 : [1,4],
+0x06 : [1,4],
+0x07 : [1,4],
+0x08 : [1,4],
+0x09 : [1,4],
+0x0A : [1,4],
 0x0B : [0,0],
 0x0C : [0,0],
-0x0D : [1],
-0x0E : [1],
-0x0F : [1],
-0x10 : [1],
-0x11 : [1],
+0x0D : [1,4],
+0x0E : [1,4],
+0x0F : [1,4],
+0x10 : [1,4],
+0x11 : [1,4],
 0x12 : [0,0],
 0x13 : [0,0],
 0x14 : [0,0],
 0x15 : [0,2],
-0x16 : [1],
+0x16 : [1,4],
 0x17 : [0,0],
-0x18 : [1],
+0x18 : [1,4],
 0x19 : [0,2],
 0x1A : [0,2],
-0x1B : [1],
+0x1B : [1,4],
 0x1C : [0,2],
-0x1D : [1],
+0x1D : [1,4],
 0x1E : [2,2],
-0xff : [1]
+0xff : [1,4]
 }
 
 regs = {
@@ -92,7 +93,10 @@ regs = {
 }
 
 maths = [["add",0x00],["sub",0x01],["mul",0x02],["div",0x03],["rem", 0x04],["bsr",0x05],["bsl",0x06],
-["and",0x07],["or", 0x08],["xor",0x09],["not",0x0A]]
+["and",0x07],["or", 0x08],["xor",0x09],["not",0x0A],["inc",0x0B],
+#conditionals
+["lt", 0x00],["gt",0x01],["leq",0x02],["geq",0x03],["eq",0x04],["neq",0x05]
+]
 
 def isnum(num):
 	try:
@@ -280,12 +284,13 @@ instbytes = []
 
 for i in processed_instruction:
 	threebyteinst = [i[0]]
-	for j in range(1,len(i)):
+	for j in range(1,3):
+		print(i)
 		if(instruction_param[i[0]][j-1] == 0):
 			if(isnum(i[j]) or isnum(str(i[j]).strip("[]"))):
 				threebyteinst.append(getnum(i[j])%0x100)
 			else:
-				threebyteinst.append(regs[i[j]])
+				threebyteinst.append(regs[i[j].strip("[]")])
 		elif(instruction_param[i[0]][j-1] == 1):
 			if(isnum(i[j]) or isnum(str(i[j]).strip("[]"))):
 				threebyteinst.append(getnum(i[j])%0x100)

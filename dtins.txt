@@ -54,6 +54,7 @@ arithmatic:
 		08: or
 		09: xor
 		0A: not (ignores regbyte)
+		0B: inc
 
 conditional:
 	13: cmpreg	regbyte regbyte
@@ -81,7 +82,12 @@ stack:
 	
 
 Interrupts:
-	Ever 1/framerate seconds, a vblacnk interrupt is fired
+	Interupt timing based on memory address ff04-ff05
+	If 0, 33ms/int is used
+	Otherwise MEMADDRms/int is used (to allow for between 1000fps to 0.0153fps)
+	First, the screen memory is used to update what is on the screen
+	Next, the controller values are copied into ram
+	Then the interrupt is handled
 	If bytes ff02 and ff03 are 0, interrupt is ignored
 	Otherwise, the current adress is pushed to the stack, and control is jumped to the value stored in bytes ff02 and ff03
 
@@ -91,5 +97,29 @@ Memory Map:
 	Reads and writes are undefined behaviour, except from:
 	byte ff00-ff001 contains the 8 buttons on the controller
 	bytes ff02-ff03 interrupts
-	byte ff04-ffTBC contains the screen
-	Imm 0xaa, 0xff represents 0xffaa (little endian)
+	bytes ff04-ff05 interupt timing
+	byte ff06-ffC5 contains the screen
+	Imm 0yy, 0xzz represents 0xzzyy (little endian)
+	
+
+video
+pixelsize	number of
+32 x 32		8  x  8
+8  x  8		32 x 32
+1  x  1		256x256
+
+mode is	0 for direct colour
+	1 for pointer in ROM
+	2 for pointer in RAM
+
+square 256*256 screen
+indexed by 64 u:berpixels (32*32):
+	3 bytes: mode byte, address/colour
+
+can point to an 16 8*8 superpixels
+	3 bytes: mode byte, address/colour
+
+can point to 64 2 byte colours
+
+colour:
+5bits red	6bits green	5bits blue

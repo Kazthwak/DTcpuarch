@@ -2,6 +2,68 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+
+#include <SDL2/SDL.h>
+#include <stdbool.h>
+
+#define pixel_size 2
+
+#define x_res 256
+#define y_res 256
+
+#define x_size pixel_size*x_res
+#define y_size pixel_size*y_res
+
+Uint32 * pixels;
+
+void setpixel_internal(uint32_t x, uint32_t y, uint32_t* video_mem, uint32_t colour){
+	uint32_t ptr = (x_size*y)+x;
+	video_mem[ptr] = colour;
+}
+
+void setpixel(uint16_t x, uint16_t y, uint32_t colour){
+	x *= pixel_size;
+	y *= pixel_size;
+	for(uint8_t i = 0; i < pixel_size; i++){
+		for(uint8_t j = 0; j < pixel_size; j++){
+			setpixel_internal(x+i, y+j, pixels, colour);
+		}
+	}
+}
+
+uint8_t pixelarr[sizeof(uint32_t) * x_size * y_size];
+
+SDL_Event event;
+SDL_Texture * texture;
+SDL_Renderer * renderer;
+bool quit = false;
+void init(){
+	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Window * screen = SDL_CreateWindow("Emulator",
+	SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, x_size, y_size, 0);
+	renderer = SDL_CreateRenderer(screen, -1, 0);
+	texture = SDL_CreateTexture(renderer,
+	SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, x_size, y_size);
+	pixels = (uint32_t*)&pixelarr;
+	memset(pixels, 255, x_size * y_size * sizeof(Uint32));
+}
+
+void lopb(){
+	SDL_UpdateTexture(texture, NULL, pixels, x_size * sizeof(Uint32));
+}
+
+void lope(){
+	SDL_RenderClear(renderer);
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
+}
+
+void cleanup(){
+	SDL_DestroyTexture(texture);
+	SDL_DestroyRenderer(renderer);
+	SDL_Quit();
+}
+
 FILE* program;
 
 //ram
@@ -80,6 +142,9 @@ void arith(uint8_t arg0, uint8_t arg1){
 				break;
 			case 0x0A:
 				acc ^= 0xffff;
+				break;
+			case 0x0B:
+				acc++;
 				break;
 	}
 }
@@ -218,26 +283,100 @@ void exec(void){
 	}
 }
 
+#define uberpixel 8*8
+#define uberpixelsize 32
+#define superpixel 4*4
+#define pixel 8*8
+
+void screen_update_uber(){
+	for(uint8_t i = 0; i < uberpixel; i++){
+		uint32_t pix_base = 0xff06+(3*i);
+		printf("%d\n", pix_base);
+		switch(mem[pix_base]){
+			case 0: //direct pixel
+			uint16_t col = memread(pix_base+1);
+			uint32_t x_base = i%8; // x coord of uberpixel in uberpixels
+			uint32_t y_base = i/8; // y coord of uberpixel in uberpixels
+			x_base *= uberpixelsize;
+			y_base *= uberpixelsize;
+			//now in normal pixels
+			uint32_t colo = 0xff;
+			uint8_t r, g, b;
+			b = col&0b11111;
+			col >>= 5;
+			g = col&0b111111;
+			col >>= 6;
+			r = col&0b11111;
+			printf("%d  ", r);
+			r <<= 3;
+			printf("%d\n", r);
+			g <<= 2;
+			b <<= 3;
+			colo <<= 8;
+			colo |= r;
+			colo <<= 8;
+			colo |= g;
+			colo <<= 8;
+			colo |= b;
+			//fix colour
+			for(uint8_t xs = 0; xs < uberpixelsize; xs++){
+				for(uint8_t ys = 0; ys < uberpixelsize; ys++){
+					//uberpixel address x_base and y_base
+					//colour colo
+					//x and y pixels relative to uberpixel
+					setpixel(x_base+xs, y_base+ys, colo);
+				}
+			}
+			break;
+			case 1:
+			case 2:
+			//call superpixel function
+		}
+	}
+}
+
+void vblank(){
+//update screen
+screen_update_uber();
+//update controller
+
+//interrupt
+}
+
+
 int main(int arg, char *argc[]){
 	if(arg < 2){
 		printf("No arguments given\n");
 		return(1);
 	}
-	program = fopen(argc[1],"r");
+program = fopen(argc[1],"r");
 isp = 0;
+
+init();
+
 //program loaded
 
 while(1){
 exec();
+lopb();
 for(uint8_t i = 0; i <0xff; i++){
-	printf("%u ", mem[i]);
+	printf("%u ", mem[i+0xff00]);
 }
 printf("\n");
+/*
 for(uint8_t i = 0; i <= ACC; i++){
 	printf("%u ", regs[i]);
+}*/
+
+int inpu = getchar();
+if(inpu == ' '){
+	printf("VBLANK\n");
+	vblank();
 }
-getchar();
+lope();
 }
 
+
+cleanup();
 return(0);
 }

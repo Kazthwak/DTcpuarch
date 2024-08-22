@@ -1,25 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-
-
 #include <SDL2/SDL.h>
 #include <stdbool.h>
 
-#define pixel_size 2
+#define pixel_size 4
 
-#define x_res 256
-#define y_res 256
+#define x_res 128
+#define y_res 128
 
 #define x_size pixel_size*x_res
 #define y_size pixel_size*y_res
 
 Uint32 * pixels;
 
+
 void setpixel_internal(uint32_t x, uint32_t y, uint32_t* video_mem, uint32_t colour){
 	uint32_t ptr = (x_size*y)+x;
 	video_mem[ptr] = colour;
 }
+
 
 void setpixel(uint16_t x, uint16_t y, uint32_t colour){
 	x *= pixel_size;
@@ -48,15 +48,18 @@ void init(){
 	memset(pixels, 255, x_size * y_size * sizeof(Uint32));
 }
 
+
 void lopb(){
 	SDL_UpdateTexture(texture, NULL, pixels, x_size * sizeof(Uint32));
 }
+
 
 void lope(){
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
 }
+
 
 void cleanup(){
 	SDL_DestroyTexture(texture);
@@ -88,25 +91,30 @@ uint16_t regs[ACC+1];
 #define b regs[B]
 #define acc regs[ACC]
 
-uint8_t getrombyte(uint16_t addr){
+
+__attribute__((always_inline)) inline uint8_t getrombyte(uint16_t addr){
 	fseek(program,addr,SEEK_SET);
 	return(fgetc(program));
 }
 
+
 uint16_t word(uint8_t byte0, uint8_t byte1){
 	return(byte0 + (byte1<<8));
 }
+
 
 void memwrite(uint16_t address, uint16_t value){
 	mem[address] = value&0xff;
 	mem[address+1] = value>>0x08;
 }
 
+
 uint16_t memread(uint16_t address){
 	uint16_t tmp = mem[address];
 	tmp += (mem[address+1]<<0x08);
 	return(tmp);
 }
+
 
 void arith(uint8_t arg0, uint8_t arg1){
 	switch(arg1){
@@ -149,15 +157,18 @@ void arith(uint8_t arg0, uint8_t arg1){
 	}
 }
 
+
 void push(uint16_t value){
 	ss -=2;
 	memwrite(ss, value);
 }
 
+
 void pop(uint8_t reg){
 	regs[reg] = memread(ss);
 	ss +=2;
 }
+
 
 void cmp(uint16_t val1, uint16_t val2){
 	flags = 0;
@@ -165,6 +176,7 @@ void cmp(uint16_t val1, uint16_t val2){
 	if(val1 > val2){flags |= 0x02;}
 	if(val1 == val2){flags|= 0x04;}
 }
+
 
 void test(uint8_t mode){
 	switch(mode){
@@ -275,6 +287,10 @@ void exec(void){
 			break;
 		case 0x1E:
 			pop(ISP);
+			break;
+		case 0x1F:
+			regs[arg0]++;
+			break;
 
 
 
@@ -283,66 +299,74 @@ void exec(void){
 	}
 }
 
-#define uberpixel 8*8
-#define uberpixelsize 32
+#define uberpixel 4*4
+#define uberpixelsize 16
 #define superpixel 4*4
 #define pixel 8*8
 
-void screen_update_uber(){
-	for(uint8_t i = 0; i < uberpixel; i++){
-		uint32_t pix_base = 0xff06+(3*i);
-		printf("%d\n", pix_base);
-		switch(mem[pix_base]){
-			case 0: //direct pixel
-			uint16_t col = memread(pix_base+1);
-			uint32_t x_base = i%8; // x coord of uberpixel in uberpixels
-			uint32_t y_base = i/8; // y coord of uberpixel in uberpixels
-			x_base *= uberpixelsize;
-			y_base *= uberpixelsize;
-			//now in normal pixels
-			uint32_t colo = 0xff;
-			uint8_t r, g, b;
-			b = col&0b11111;
-			col >>= 5;
-			g = col&0b111111;
-			col >>= 6;
-			r = col&0b11111;
-			printf("%d  ", r);
-			r <<= 3;
-			printf("%d\n", r);
-			g <<= 2;
-			b <<= 3;
-			colo <<= 8;
-			colo |= r;
-			colo <<= 8;
-			colo |= g;
-			colo <<= 8;
-			colo |= b;
-			//fix colour
-			for(uint8_t xs = 0; xs < uberpixelsize; xs++){
-				for(uint8_t ys = 0; ys < uberpixelsize; ys++){
-					//uberpixel address x_base and y_base
-					//colour colo
-					//x and y pixels relative to uberpixel
-					setpixel(x_base+xs, y_base+ys, colo);
-				}
-			}
-			break;
-			case 1:
-			case 2:
-			//call superpixel function
+uint8_t grmodes[] = {
+	4,8,16,32,64,128
+};
+
+
+uint32_t getcol(uint16_t enccol){
+uint8_t rc,gc,bc;
+bc = (enccol)&(31); //magic numbers
+enccol >>= 5;
+gc = (enccol)&(63);
+enccol >>= 6;
+rc = (enccol)&(31);
+bc <<= 3;
+gc <<= 2;
+rc <<= 3;
+uint32_t col = 0xff;
+col <<= 8;
+col |= rc;
+col <<= 8;
+col |= gc;
+col <<= 8;
+col |= bc;
+return(col);
+}
+
+
+uint32_t getpixcolour(uint8_t xl, uint8_t yl, uint8_t res){
+	uint16_t base = memread(0xff07);
+	base += 2*(xl);
+	base += 2*(yl)*res;
+	return(getcol(memread(base)));
+}
+
+void screen_update(void){
+	uint16_t mode = memread(0xff06);
+	if(mode > 5){printf("ERROR"); return;}
+	uint8_t res = grmodes[mode];
+	uint8_t pixs = 128/res;
+	printf("res: %d, pixs %d\n", res, pixs);
+	for(uint8_t xi = 0; xi <x_res; xi++){
+		for(uint8_t yi = 0; yi <y_res; yi++){
+			uint8_t mpx, mpy;
+			mpx = xi/pixs;
+			mpy = yi/pixs;
+			setpixel(xi, yi, getpixcolour(mpx, mpy, res));
 		}
 	}
 }
 
 void vblank(){
 //update screen
-screen_update_uber();
+screen_update();
 //update controller
 
 //interrupt
+if(memread(0xff02) != 0){
+printf("int\n");
+push(isp);
+isp = memread(0xff02);
+}
 }
 
+#define inspe 1000
 
 int main(int arg, char *argc[]){
 	if(arg < 2){
@@ -354,25 +378,33 @@ isp = 0;
 
 init();
 
-//program loaded
+//program loaded 
+//mruns ins for every enter press
+
+uint16_t aks = 0;
 
 while(1){
 exec();
 lopb();
+/*
 for(uint8_t i = 0; i <0xff; i++){
-	printf("%u ", mem[i+0xff00]);
+	printf("%u ", mem[i]);
 }
 printf("\n");
-/*
+*/
+
+if(aks%inspe == 0){
 for(uint8_t i = 0; i <= ACC; i++){
 	printf("%u ", regs[i]);
-}*/
+}printf("\n");
 
 int inpu = getchar();
 if(inpu == ' '){
 	printf("VBLANK\n");
 	vblank();
 }
+if(inpu == '0'){return(0);}
+}aks++;
 lope();
 }
 

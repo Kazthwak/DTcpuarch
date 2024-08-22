@@ -1,36 +1,40 @@
-mov x, 0x0A
-mov acc, 0x05
-maths x, add
-mov acc, a
-mov y, 0xff06
+mov x, 0 ;4x4 graphics
+mov [0xff06], x
+mov x, 0 ;graphics pointer
+mov [0xff08], x
+mov acc 0xffff ;colour
+mov a, 0x0 ;pointer
+mov b, 32 ;limit
+mov x xinc
+mov [0xff02], x
+mov x, 0
 
 lop:
-mov a, acc
-mov x, 1
-maths x, and
-mov x, 0xffff
-maths x, mul
-mov x, acc ;x holds the colour
-mov acc, 0
-mov [y], acc
-mov acc, y
-maths y inc
-mov [acc], x
-maths y, inc
-maths y, inc
-mov acc, y ;pointer updated
-mov acc, a
-mov x, 1
-maths x, bsr
-mov a, acc
+mov [a], acc
+inc a
+inc a
+maths y, not
+
+;stop at limit
+cmp a, b
+test 00
 jmp lop
 
-label:
-jmp label
 
+jmp hang
 
+xinc:
+push acc
+mov acc, x
+mov x, 0x40
+maths x, add
+mov x, acc
+pop acc
+mov [0], x
+ret
 
 mov x, 1
+mov [0xff06], x
 mov y, 1
 mov a, 0
 mov acc, 0
@@ -41,17 +45,15 @@ maths x, add
 mov x, acc
 ;done the fib, next bit is to store in ram
 mov [a], acc
-mov acc, a
-maths acc, inc ;pointer arithmatic
-maths acc, inc ;pointer arithmatic
-mov a, acc
+inc a
+inc a
 mov acc, x
 maths y, add ;repeat the process with y
 mov y, acc
 mov [a], acc ;do the ram thing
-mov acc, a
-maths acc, inc ;pointer arithmatic
-maths acc, inc ;pointer arithmatic
-mov a, acc
-mov acc, y
+inc a
+inc a
 jmp loop ;repeat
+
+hang:
+jmp hang

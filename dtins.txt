@@ -79,6 +79,9 @@ stack:
 	1C: pop		regbyte 00
 	1D: call	16-bit-imm (address to call)
 	1E: ret		0000
+
+bonus:
+	1F: inc		regnyte 00
 	
 
 Interrupts:
@@ -98,28 +101,24 @@ Memory Map:
 	byte ff00-ff001 contains the 8 buttons on the controller
 	bytes ff02-ff03 interrupts
 	bytes ff04-ff05 interupt timing
-	byte ff06-ffC5 contains the screen
+	bytes ff06-ff07 represent video mode
+	bytes ffo7-ff08 represent video pointer
 	Imm 0yy, 0xzz represents 0xzzyy (little endian)
 	
 
 video
-pixelsize	number of
-32 x 32		8  x  8
-8  x  8		32 x 32
-1  x  1		256x256
 
-mode is	0 for direct colour
-	1 for pointer in ROM
-	2 for pointer in RAM
-
-square 256*256 screen
-indexed by 64 u:berpixels (32*32):
-	3 bytes: mode byte, address/colour
-
-can point to an 16 8*8 superpixels
-	3 bytes: mode byte, address/colour
-
-can point to 64 2 byte colours
+mode:
+	0: 4  X  4
+	1: 8  X  8
+	2: 16 X 16
+	3: 32 X 32
+	4: 64 X 64
+	5: 128X128
 
 colour:
 5bits red	6bits green	5bits blue
+
+
+#-#-#-#-
+-#-#-#-#
